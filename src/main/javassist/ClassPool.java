@@ -1132,6 +1132,63 @@ public class ClassPool {
      * <p>This method is provided for convenience.  If you need more
      * complex functionality, you should write your own class loader.
      *
+     *
+     *
+     * @param loader        the class loader used to load this class.
+     *                      For example, the loader returned by
+     *                      <code>getClassLoader()</code> can be used
+     *                      for this parameter.
+     * @param domain        the protection domain for the class.
+     *                      If it is null, the default domain created
+     *                      by <code>java.lang.ClassLoader</code> is used.
+     *
+     * @see #getClassLoader()
+     * @see #toClass(String name, byte[] b, ClassLoader loader, ProtectionDomain domain)
+     * @since 3.3
+     */
+    public Class toClass(CtClass ct, ClassLoader loader, ProtectionDomain domain)
+        throws CannotCompileException
+    {
+        try {
+            return toClass(ct.getName(), ct.toBytecode(), loader, domain);
+        }
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new CannotCompileException(e);
+        }
+    }
+
+    /**
+     * Converts the class to a <code>java.lang.Class</code> object.
+     * Once this method is called, further modifications are not allowed
+     * any more.
+     *
+     * <p>The class file represented by the given <code>CtClass</code> is
+     * loaded by the given class loader to construct a
+     * <code>java.lang.Class</code> object.  Since a private method
+     * on the class loader is invoked through the reflection API,
+     * the caller must have permissions to do that.
+     *
+     * <p>An easy way to obtain <code>ProtectionDomain</code> object is
+     * to call <code>getProtectionDomain()</code>
+     * in <code>java.lang.Class</code>.  It returns the domain that the
+     * class belongs to.
+     *
+     * <p>This method is provided for convenience.  If you need more
+     * complex functionality, you should write your own class loader.
+     *
+     * @param  name
+     *         The expected <a href="#name">binary name</a> of the class, or
+     *         <tt>null</tt> if not known
+     *
+     * @param  b
+     *         The bytes that make up the class data.  The bytes in positions
+     *         <tt>off</tt> through <tt>off+len-1</tt> should have the format
+     *         of a valid class file as defined by
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *
      * @param loader        the class loader used to load this class.
      *                      For example, the loader returned by
      *                      <code>getClassLoader()</code> can be used
@@ -1143,22 +1200,21 @@ public class ClassPool {
      * @see #getClassLoader()
      * @since 3.3
      */
-    public Class toClass(CtClass ct, ClassLoader loader, ProtectionDomain domain)
-        throws CannotCompileException
+    public Class toClass(String name, byte[] b, ClassLoader loader, ProtectionDomain domain)
+            throws CannotCompileException
     {
         try {
-            byte[] b = ct.toBytecode();
             java.lang.reflect.Method method;
             Object[] args;
             if (domain == null) {
                 method = defineClass1;
-                args = new Object[] { ct.getName(), b, new Integer(0),
-                                      new Integer(b.length)};
+                args = new Object[] { name, b, new Integer(0),
+                        new Integer(b.length)};
             }
             else {
                 method = defineClass2;
-                args = new Object[] { ct.getName(), b, new Integer(0),
-                    new Integer(b.length), domain};
+                args = new Object[] { name, b, new Integer(0),
+                        new Integer(b.length), domain};
             }
 
             return (Class)toClass2(method, loader, args);
